@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WellTheory Cycle Name Picker</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #f5f0e8;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 28px 16px 56px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  header h1 {
+    font-size: 1.55rem;
+    letter-spacing: 0.08em;
+    color: #2c1810;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  header .subtitle {
+    font-size: 0.85rem;
+    color: #7a5c3a;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+  .next-badge {
+    display: inline-block;
+    background: #2c1810;
+    color: #f5f0e8;
+    font-size: 0.75rem;
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-top: 8px;
+    letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ── RECORD PLAYER ── */
+  .player-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+
+  .turntable-wrap {
+    position: relative;
+    width: 420px;
+  }
+
+  /* Wooden base */
+  .turntable-base {
+    background: linear-gradient(160deg, #5c3318 0%, #3d2010 35%, #2a1508 60%, #3d2010 100%);
+    border-radius: 16px;
+    padding: 28px 28px 32px;
+    box-shadow:
+      0 12px 40px rgba(0,0,0,0.45),
+      0 2px 6px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  /* Wood grain overlay */
+  .turntable-base::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: repeating-linear-gradient(
+      92deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(255,255,255,0.018) 18px,
+      rgba(255,255,255,0.018) 19px
+    );
+    pointer-events: none;
+  }
+
+  /* Platter mat */
+  .platter-mat {
+    background: radial-gradient(circle, #1e1008 60%, #0d0503 100%);
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow:
+      0 6px 24px rgba(0,0,0,0.6),
+      inset 0 0 0 1px rgba(255,255,255,0.05);
+    width: 364px;
+    height: 364px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 0 auto;
+  }
+
+  /* Spindle post */
+  .spindle-post {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #c8a97a;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+
+  #wheel-canvas {
+    border-radius: 50%;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    display: block;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Tonearm overlay — covers the full turntable base */
+  .tonearm-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  /* Brand plate on base */
+  .brand-plate {
+    position: absolute;
+    bottom: 10px;
+    right: 22px;
+    background: #c8a97a;
+    color: #2c1810;
+    font-family: 'Courier New', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+  }
+
+  /* Knobs */
+  .knobs {
+    position: absolute;
+    bottom: 14px;
+    left: 22px;
+    display: flex;
+    gap: 10px;
+  }
+  .knob {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #888, #333);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+
+  .spin-btn {
+    background: #2c1810;
+    color: #f5f0e8;
+    border: none;
+    padding: 13px 42px;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: 'Georgia', serif;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 3px 10px rgba(44,24,16,0.35);
+  }
+  .spin-btn:hover { background: #4a2c1a; }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { background: #9e8a78; cursor: not-allowed; }
+
+  /* Winner reveal */
+  .reveal-box {
+    background: #fff;
+    border: 2px solid #2c1810;
+    border-radius: 8px;
+    padding: 18px 28px;
+    text-align: center;
+    max-width: 360px;
+    display: none;
+    box-shadow: 0 4px 16px rgba(44,24,16,0.15);
+  }
+  .reveal-box.show { display: block; }
+  .reveal-box .winner-name {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #2c1810;
+  }
+  .reveal-box .winner-msg {
+    font-size: 0.88rem;
+    color: #7a5c3a;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .reveal-box .next-letter {
+    display: inline-block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #c0392b;
+    margin-top: 8px;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* Member chips */
+  .chips-section {
+    max-width: 420px;
+    margin: 0 auto 10px;
+  }
+  .chips-section h3, .hall-section h3, .history-section h3 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #7a5c3a;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .chip {
+    padding: 4px 13px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.04em;
+    border: 1.5px solid #2c1810;
+    background: #f5f0e8;
+    color: #2c1810;
+    transition: all 0.3s;
+  }
+  .chip.picked {
+    background: #2c1810;
+    color: #f5f0e8;
+    text-decoration: line-through;
+    opacity: 0.45;
+  }
+  .reset-link {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: #9e8a78;
+    font-family: 'Courier New', monospace;
+  }
+  .reset-link a { color: #9e8a78; cursor: pointer; text-decoration: underline; }
+  .reset-link a:hover { color: #c0392b; }
+
+  /* Pick history */
+  .history-section { max-width: 420px; margin: 0 auto 8px; display: none; }
+  .history-section.show { display: block; }
+  .history-list {
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    color: #4a2c1a;
+    text-align: center;
+    line-height: 1.9;
+  }
+
+  /* Hall of Cycles */
+  .hall-section { max-width: 680px; margin: 0 auto; }
+  .hall-records {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    justify-content: center;
+  }
+  .record-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100px;
+  }
+  .record-svg { width: 90px; height: 90px; }
+  .record-label {
+    font-size: 0.65rem;
+    text-align: center;
+    width: 100%;
+    color: #4a2c1a;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  /* Confetti */
+  #confetti-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: -20px;
+    font-size: 1.3rem;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  .divider {
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #7a5c3a, transparent);
+    margin: 22px auto;
+  }
+</style>
+</head>
+<body>
+
+<div id="confetti-container"></div>
+
+<header>
+  <h1>🎵 Cycle Name Picker</h1>
+  <div class="subtitle">WellTheory Product Team · Songs A–Z</div>
+  <div class="next-badge">Next Letter: V</div>
+</header>
+
+<div class="player-section">
+  <div class="turntable-wrap">
+    <div class="turntable-base">
+
+      <div class="platter-mat">
+        <div class="spindle-post"></div>
+        <canvas id="wheel-canvas" width="340" height="340"></canvas>
+      </div>
+
+      <!--
+        Tonearm overlay SVG. Coordinate system matches the turntable-base:
+          - base total size: 420 × 424 (28 top pad, 364 platter, 32 bottom pad)
+          - record center: (210, 210)
+          - record outer radius: 163px (in canvas px, 1:1 with base px)
+          - needle tip: (253, 75) ≈ 18° clockwise from top of record,
+            at ~87% of the record radius — sits right in the groove band.
+            Winner calc uses this 18° offset.
+      -->
+      <svg class="tonearm-overlay" width="420" height="424" viewBox="0 0 420 424"
+           xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Mounting plate / pivot base -->
+        <circle cx="390" cy="26" r="17" fill="#5a5a5a" stroke="#333" stroke-width="1.5"/>
+        <circle cx="390" cy="26" r="11" fill="#999"/>
+        <circle cx="390" cy="26" r="4"  fill="#333"/>
+
+        <!-- Counterweight (opposite end, behind pivot) -->
+        <rect x="382" y="6" width="16" height="9" rx="4"
+              fill="#6a6a6a" stroke="#444" stroke-width="1"/>
+
+        <!-- Main arm body -->
+        <line x1="390" y1="31" x2="264" y2="60"
+              stroke="#7a7a7a" stroke-width="6" stroke-linecap="round"/>
+        <!-- Sheen highlight on arm -->
+        <line x1="390" y1="29" x2="264" y2="58"
+              stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- Headshell (slight angle change near record) -->
+        <line x1="264" y1="60" x2="254" y2="69"
+              stroke="#888" stroke-width="4.5" stroke-linecap="round"/>
+
+        <!-- Stylus / needle -->
+        <line x1="255" y1="68" x2="253" y2="78"
+              stroke="#bbb" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- Needle tip — glowing red dot = the "score" position -->
+        <circle cx="253" cy="79" r="4.5" fill="#c0392b" opacity="0.85"/>
+        <circle cx="253" cy="79" r="2"   fill="#ff6b6b" opacity="0.9"/>
+      </svg>
+
+      <div class="brand-plate">WELLTHEORY</div>
+      <div class="knobs">
+        <div class="knob"></div>
+        <div class="knob"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spin-btn" onclick="spinWheel()">SPIN THE RECORD</button>
+
+  <div class="reveal-box" id="reveal-box">
+    <div class="winner-name" id="winner-name"></div>
+    <div class="winner-msg" id="winner-msg"></div>
+    <div class="next-letter" id="winner-letter"></div>
+  </div>
+</div>
+
+<div class="chips-section">
+  <h3>This Round's Picks</h3>
+  <div class="chips" id="chips-container"></div>
+  <div class="reset-link"><a onclick="resetRound()">reset this round</a></div>
+</div>
+
+<div class="divider"></div>
+
+<div class="history-section" id="history-section">
+  <h3>Recent Picks</h3>
+  <div class="history-list" id="history-list"></div>
+  <div class="divider"></div>
+</div>
+
+<div class="hall-section">
+  <h3>🏆 Hall of Cycles</h3>
+  <div class="hall-records" id="hall-records"></div>
+</div>
+
+<script>
+const MEMBERS = ['Claire','Andrej','Jeremy','Jesse','Marcin','Molly','Murph','Natasha','Rogério','Bri'];
+const NEXT_LETTER = 'V';
+const STORAGE_KEY = 'welltheory_cycle_picker_v2';
+
+// Needle tip is at ~18° clockwise from top of record.
+// Winner = segment under needle when wheel stops.
+const NEEDLE_OFFSET_DEG = 18;
+
+const HALL = [
+  { name: 'UNSTOPPABLE', letter: 'U' },
+  { name: 'TAKING CARE OF BUSINESS', letter: 'T' },
+  { name: 'SIGH NO MORE', letter: 'S' },
+  { name: 'REBEL REBEL', letter: 'R' },
+  { name: 'QUEEN OF THE NIGHT PT.2', letter: 'Q' },
+  { name: 'QUEEN OF THE NIGHT PT.1', letter: 'Q' },
+  { name: 'PITORRO DE COCO', letter: 'P' },
+  { name: 'OVER THE HILLS AND FAR AWAY', letter: 'O' },
+  { name: 'NEW LIGHT', letter: 'N' },
+  { name: 'MOONSHINE', letter: 'M' },
+  { name: 'LEAVE OUT THE REST', letter: 'L' },
+  { name: 'KEEP YOUR HEAD UP', letter: 'K' },
+  { name: 'JUST THE TWO OF US', letter: 'J' },
+  { name: "IF THAT'S WHAT IT TAKES", letter: 'I' },
+];
+
+const SEG_COLORS = [
+  '#1a1008','#2c1810','#3d2318','#2c1810',
+  '#1a1008','#3d2318','#2c1810','#1a1008',
+  '#3d2318','#2c1810'
+];
+const TXT_COLORS = [
+  '#e8d5b0','#f5e6cc','#e8d5b0','#f5e6cc',
+  '#e8d5b0','#f5e6cc','#e8d5b0','#e8d5b0',
+  '#f5e6cc','#e8d5b0'
+];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { pickedMembers: [], pickHistory: [] };
+}
+function saveState(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+}
+
+let state = loadState();
+let availableMembers = MEMBERS.filter(m => !state.pickedMembers.includes(m));
+let isSpinning = false;
+let currentAngle = 0;
+
+const canvas = document.getElementById('wheel-canvas');
+const ctx = canvas.getContext('2d');
+const CX = 170, CY = 170, R = 163, IR = 50;
+
+function drawWheel(deg) {
+  ctx.clearRect(0, 0, 340, 340);
+  const members = availableMembers.length > 0 ? availableMembers : MEMBERS;
+  const n = members.length;
+  const arc = (2 * Math.PI) / n;
+  const rot = (deg * Math.PI) / 180;
+
+  // Outer groove ring
+  ctx.beginPath();
+  ctx.arc(CX, CY, R + 3, 0, 2 * Math.PI);
+  ctx.fillStyle = '#0d0705';
+  ctx.fill();
+
+  for (let i = 0; i < n; i++) {
+    const s = rot + i * arc - Math.PI / 2;
+    const e = s + arc;
+
+    // Segment fill
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, s, e);
+    ctx.closePath();
+    ctx.fillStyle = SEG_COLORS[i % SEG_COLORS.length];
+    ctx.fill();
+
+    // Groove lines
+    for (let gr = IR + 10; gr < R - 10; gr += 12) {
+      ctx.beginPath();
+      ctx.arc(CX, CY, gr, s + 0.04, e - 0.04);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Segment divider
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, s, e);
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Name text
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(s + arc / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = TXT_COLORS[i % TXT_COLORS.length];
+    ctx.font = 'bold 12px Georgia, serif';
+    ctx.fillText(members[i], R - 14, 4);
+    ctx.restore();
+  }
+
+  // Inner label circle
+  ctx.beginPath();
+  ctx.arc(CX, CY, IR, 0, 2 * Math.PI);
+  ctx.fillStyle = '#f5e6cc';
+  ctx.fill();
+  ctx.strokeStyle = '#c8a97a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#2c1810';
+  ctx.font = 'bold 9px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('WELLTHEORY', CX, CY - 10);
+  ctx.font = '8px Courier New, monospace';
+  ctx.fillStyle = '#7a5c3a';
+  ctx.fillText('PRODUCT', CX, CY + 2);
+  ctx.fillText('TEAM', CX, CY + 13);
+
+  // Spindle
+  ctx.beginPath();
+  ctx.arc(CX, CY, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = '#1a1008';
+  ctx.fill();
+}
+
+function getWinnerIndex(finalAngle) {
+  // Find the segment under the needle (NEEDLE_OFFSET_DEG clockwise from top).
+  // Segment i starts at (i * arc) degrees from top in unrotated wheel.
+  // After rotation of finalAngle, segment i is at (i*arc + finalAngle) from top.
+  // We want: (i*arc + finalAngle) ≡ NEEDLE_OFFSET_DEG (mod 360)
+  // → i*arc ≡ NEEDLE_OFFSET_DEG - finalAngle (mod 360)
+  const members = availableMembers.length > 0 ? availableMembers : MEMBERS;
+  const n = members.length;
+  const arc = 360 / n;
+  const normalized = ((NEEDLE_OFFSET_DEG - (finalAngle % 360)) + 3600) % 360;
+  return Math.floor(normalized / arc) % n;
+}
+
+function spinWheel() {
+  if (isSpinning || availableMembers.length === 0) return;
+  isSpinning = true;
+  document.getElementById('spin-btn').disabled = true;
+  document.getElementById('reveal-box').classList.remove('show');
+
+  const target = currentAngle + (4 + Math.floor(Math.random() * 4)) * 360 + Math.floor(Math.random() * 360);
+  const duration = 3600;
+  const startAngle = currentAngle;
+  const startTime = performance.now();
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+
+  function animate(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    currentAngle = startAngle + (target - startAngle) * easeOut(p);
+    drawWheel(currentAngle);
+    if (p < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      currentAngle = target;
+      drawWheel(currentAngle);
+      isSpinning = false;
+      revealWinner(getWinnerIndex(currentAngle));
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function revealWinner(idx) {
+  const winner = availableMembers[idx];
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  state.pickedMembers.push(winner);
+  state.pickHistory.unshift({ name: winner, date: dateStr });
+  if (state.pickHistory.length > 20) state.pickHistory = state.pickHistory.slice(0, 20);
+  saveState(state);
+
+  availableMembers = MEMBERS.filter(m => !state.pickedMembers.includes(m));
+  renderChips();
+  renderHistory();
+
+  document.getElementById('winner-name').textContent = '🎉 ' + winner + '!';
+  document.getElementById('winner-msg').textContent =
+    `${winner}, you get to name our next cycle. Think of a great song starting with…`;
+  document.getElementById('winner-letter').textContent = '🎵 ' + NEXT_LETTER;
+  document.getElementById('reveal-box').classList.add('show');
+  launchConfetti();
+
+  if (availableMembers.length === 0) {
+    setTimeout(() => {
+      state.pickedMembers = [];
+      saveState(state);
+      availableMembers = [...MEMBERS];
+      renderChips();
+      drawWheel(currentAngle);
+      document.getElementById('winner-name').textContent = '🔄 Full round complete!';
+      document.getElementById('winner-msg').textContent = "Everyone has had a turn. Starting fresh — spin whenever you're ready!";
+      document.getElementById('winner-letter').textContent = '';
+      document.getElementById('spin-btn').disabled = false;
+    }, 4500);
+  } else {
+    document.getElementById('spin-btn').disabled = false;
+    drawWheel(currentAngle);
+  }
+}
+
+function resetRound() {
+  if (!confirm('Reset this round? This will clear current picks and start fresh.')) return;
+  state.pickedMembers = [];
+  saveState(state);
+  availableMembers = [...MEMBERS];
+  renderChips();
+  drawWheel(currentAngle);
+  document.getElementById('reveal-box').classList.remove('show');
+  document.getElementById('spin-btn').disabled = false;
+}
+
+function renderChips() {
+  const c = document.getElementById('chips-container');
+  c.innerHTML = '';
+  MEMBERS.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.pickedMembers.includes(m) ? ' picked' : '');
+    chip.textContent = m;
+    c.appendChild(chip);
+  });
+}
+
+function renderHistory() {
+  const sec = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+  if (!state.pickHistory.length) { sec.classList.remove('show'); return; }
+  sec.classList.add('show');
+  list.innerHTML = state.pickHistory.slice(0, 10).map(p => `${p.date} — ${p.name}`).join('<br>');
+}
+
+function launchConfetti() {
+  const notes = ['🎵','🎶','🎸','🎷','🎺','🥁','🎻','♪','🎼'];
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  for (let i = 0; i < 35; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.textContent = notes[Math.floor(Math.random() * notes.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.animationDuration = (1.5 + Math.random() * 2.2) + 's';
+      el.style.animationDelay = (Math.random() * 0.6) + 's';
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }, i * 55);
+  }
+}
+
+function renderHall() {
+  const container = document.getElementById('hall-records');
+  HALL.forEach(cycle => {
+    const card = document.createElement('div');
+    card.className = 'record-card';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 90 90');
+    svg.setAttribute('class','record-svg');
+    svg.innerHTML = `
+      <circle cx="45" cy="45" r="44" fill="#1a1008"/>
+      <circle cx="45" cy="45" r="40" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="2.5"/>
+      <circle cx="45" cy="45" r="32" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>
+      <circle cx="45" cy="45" r="24" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1.5"/>
+      <circle cx="45" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1.2"/>
+      <circle cx="45" cy="45" r="11" fill="#f5e6cc" stroke="#c8a97a" stroke-width="1.2"/>
+      <text x="45" y="49" text-anchor="middle" font-size="9" fill="#2c1810"
+        font-family="Courier New" font-weight="bold">${cycle.letter}</text>
+    `;
+    card.appendChild(svg);
+
+    const label = document.createElement('div');
+    label.className = 'record-label';
+    label.textContent = cycle.name;
+    card.appendChild(label);
+    container.appendChild(card);
+  });
+}
+
+// Init
+drawWheel(0);
+renderChips();
+renderHistory();
+renderHall();
+</script>
+</body>
+</html>
